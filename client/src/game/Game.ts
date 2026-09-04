@@ -198,11 +198,10 @@ export class Game {
             this.callbacks.onKillsChange(this.localPlayer.kills, this.localPlayer.deaths);
             this.callbacks.onKillFeed(this.localPlayerId, 'You', bot.name);
           }
-        } else if (result.targetId) {
+        } else {
           // Remote player hit — send to server with weapon type & damage
           const shotPayload = {
             roomId: this.roomId,
-            targetId: result.targetId,
             origin:    { x: result.origin.x,    y: result.origin.y,    z: result.origin.z },
             direction: { x: result.direction.x, y: result.direction.y, z: result.direction.z },
             weaponType: result.weaponType,
