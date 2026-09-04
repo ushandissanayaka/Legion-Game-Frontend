@@ -5,7 +5,7 @@ import { SOCKET_EVENTS } from '../types/game';
 // Socket.IO client singleton
 // ============================================================
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+const SERVER_URL = (import.meta.env.VITE_SERVER_URL || 'http://localhost:3001').replace(/\/$/, '');
 
 let _socket: Socket | null = null;
 
