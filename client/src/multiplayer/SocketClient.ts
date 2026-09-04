@@ -18,6 +18,13 @@ export function getSocket(): Socket {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
+
+    _socket.on('connect', () => {
+      console.info('[Socket] Connected to server', SERVER_URL);
+    });
+    _socket.on('connect_error', (error) => {
+      console.error('[Socket] Connection failed', error.message);
+    });
   }
   return _socket;
 }

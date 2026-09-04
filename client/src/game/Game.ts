@@ -200,7 +200,7 @@ export class Game {
           }
         } else if (result.targetId) {
           // Remote player hit — send to server with weapon type & damage
-          this.socket.emit(SOCKET_EVENTS.PLAYER_SHOOT, {
+          const shotPayload = {
             roomId: this.roomId,
             targetId: result.targetId,
             origin:    { x: result.origin.x,    y: result.origin.y,    z: result.origin.z },
@@ -208,7 +208,9 @@ export class Game {
             weaponType: result.weaponType,
             damage: result.damage,
             timestamp: Date.now(),
-          });
+          };
+          this.socket.emit(SOCKET_EVENTS.PLAYER_SHOOT, shotPayload);
+          console.info('[Combat] playerShoot sent', shotPayload);
         }
       }
     }
@@ -335,14 +337,18 @@ export class Game {
       newHealth: number;
     }) => {
       if (targetId === this.localPlayerId) {
-        this.localPlayer.health = newHealth;
-        this.callbacks.onHealthChange(newHealth);
+        const health = Math.max(0, newHealth);
+        this.localPlayer.health = health;
+        this.callbacks.onHealthChange(health);
         this.audio.playHit();
         (window as any).__hudShowDamage?.();
+        console.info('[Combat] Hit received', { targetId, newHealth: health, shooterId });
+        if (health <= 0) this.markLocalPlayerDead();
       } else if (shooterId === this.localPlayerId) {
         // We hit someone — show hit marker
         (window as any).__hudShowHit?.();
         this.audio.playHit();
+        console.info('[Combat] Hit received', { targetId, newHealth, shooterId });
       }
   };
 
@@ -355,14 +361,11 @@ export class Game {
       killerName: string;
       victimName: string;
     }) => {
+      console.info('[Combat] Death received', { victimId, killerId, killerName, victimName });
       this.callbacks.onKillFeed(killerId, killerName, victimName);
 
       if (victimId === this.localPlayerId) {
-        this.localPlayer.alive = false;
-        this.localPlayer.deaths += 1;
-        this.callbacks.onAliveChange(false);
-        this.callbacks.onKillsChange(this.localPlayer.kills, this.localPlayer.deaths);
-        this.audio.playDeath();
+        this.markLocalPlayerDead();
       } else {
         const rp = this.remotePlayers.get(victimId);
         if (rp) rp.setAlive(false);
@@ -373,6 +376,16 @@ export class Game {
         }
       }
   };
+
+    private markLocalPlayerDead(): void {
+      if (!this.localPlayer.alive) return;
+
+      this.localPlayer.alive = false;
+      this.localPlayer.deaths += 1;
+      this.callbacks.onAliveChange(false);
+      this.callbacks.onKillsChange(this.localPlayer.kills, this.localPlayer.deaths);
+      this.audio.playDeath();
+    }
 
     // Respawn event
   private handlePlayerRespawn = ({
