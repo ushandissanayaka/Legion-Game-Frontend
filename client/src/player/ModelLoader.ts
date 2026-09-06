@@ -7,7 +7,7 @@ let cachedEnemyModel: THREE.Group | null = null;
 const loader = new GLTFLoader();
 
 const ENEMY_MODEL_URL = '/low%20poly%20soldier%203d%20model.glb';
-export const ENEMY_MODEL_HEIGHT = 2;
+export const ENEMY_MODEL_HEIGHT = 2.2;
 
 export function loadPlayerModel(callback: (model: THREE.Group) => void) {
   if (cachedPlayerModel) {

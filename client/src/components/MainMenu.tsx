@@ -151,15 +151,6 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             />
           </div>
 
-          <div className="menu-buttons">
-            <button className="menu-btn bg-cyan">🚩 Missions</button>
-            <button className="menu-btn bg-orange">🎫 Poxel Pass</button>
-            <button className="menu-btn bg-green">🏪 Shop</button>
-            <button className="menu-btn bg-blue">🎛 Inventory</button>
-            <button className="menu-btn bg-purple">🏆 Leaders</button>
-            <button className="menu-btn bg-yellow">🛡 Clans</button>
-            <button className="menu-btn bg-navy">🏠 Servers</button>
-          </div>
         </div>
 
         {/* Center Content */}
