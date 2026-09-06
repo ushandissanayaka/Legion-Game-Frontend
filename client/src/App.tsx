@@ -29,6 +29,7 @@ interface KillFeedItem {
 }
 
 let killFeedCounter = 0;
+const MIN_ROOM_LOADING_MS = 4000;
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>('MENU');
@@ -66,6 +67,26 @@ export default function App() {
   const practiceAutoStartRef = useRef(false);
   const autoJoinPendingRef = useRef(false);
   const matchStatsRef = useRef({ kills: 0, deaths: 0 });
+  const connectingStartedAtRef = useRef(0);
+  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const beginConnecting = () => {
+    connectingStartedAtRef.current = Date.now();
+    setIsConnecting(true);
+  };
+
+  const finishConnectingAfterRoomResponse = () => {
+    const elapsed = Date.now() - connectingStartedAtRef.current;
+    const remaining = Math.max(MIN_ROOM_LOADING_MS - elapsed, 0);
+    if (remaining === 0) {
+      setIsConnecting(false);
+      return;
+    }
+    loadingTimerRef.current = setTimeout(() => {
+      setIsConnecting(false);
+      loadingTimerRef.current = null;
+    }, remaining);
+  };
 
   // ── Socket setup ──────────────────────────────────────────
   useEffect(() => {
@@ -83,6 +104,7 @@ export default function App() {
 
     socket.on('connect_error', () => {
       setError('Cannot connect to server. Please try again.');
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
       setIsConnecting(false);
     });
 
@@ -95,7 +117,7 @@ export default function App() {
       setRoom(r);
       spawnIndexRef.current = 0;
       if (!isAutoJoin) setAppState('LOBBY');
-      setIsConnecting(false);
+      finishConnectingAfterRoomResponse();
 
       if (practiceAutoStartRef.current) {
         practiceAutoStartRef.current = false;
@@ -115,7 +137,7 @@ export default function App() {
       } else if (!isAutoJoin) {
         setAppState('LOBBY');
       }
-      setIsConnecting(false);
+      finishConnectingAfterRoomResponse();
     });
 
     socket.on(SOCKET_EVENTS.PLAYER_JOINED, ({ room: r }: { player: PlayerState; room: RoomState }) => {
@@ -169,6 +191,7 @@ export default function App() {
     // ── Error 
     socket.on(SOCKET_EVENTS.ERROR, ({ message }: { message: string }) => {
       setError(message);
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
       setIsConnecting(false);
     });
 
@@ -296,6 +319,7 @@ export default function App() {
       gameRef.current?.destroy();
       gameRef.current = null;
       audioRef.current.dispose();
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current);
       disconnectSocket();
     };
   }, []);
@@ -303,7 +327,7 @@ export default function App() {
   // ── Handlers ─────────────────────────────────────────────
   const handleCreateRoom = (name: string, duration: number) => {
     setError(null);
-    setIsConnecting(true);
+    beginConnecting();
     setBotCount(0);
     const socket = connectSocket();
     socketRef.current = socket;
@@ -312,7 +336,7 @@ export default function App() {
 
   const handleStartPractice = (name: string, bots: number, duration: number, gun: WeaponType = 'assault') => {
     setError(null);
-    setIsConnecting(true);
+    beginConnecting();
     setBotCount(bots);
     setWeaponType(gun);
     practiceAutoStartRef.current = true;
@@ -323,7 +347,7 @@ export default function App() {
 
   const handleJoinRoom = (name: string, roomId: string) => {
     setError(null);
-    setIsConnecting(true);
+    beginConnecting();
     setBotCount(0);
     const socket = connectSocket();
     socketRef.current = socket;
@@ -332,7 +356,7 @@ export default function App() {
 
   const handleAutoJoinRoom = (name: string, duration: number) => {
     setError(null);
-    setIsConnecting(true);
+    beginConnecting();
     setBotCount(0);
     autoJoinPendingRef.current = true;
     const socket = connectSocket();
