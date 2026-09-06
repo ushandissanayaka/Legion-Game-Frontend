@@ -16,6 +16,10 @@ const BOT_COLORS = [
   0x2299cc, 0x22cc55, 0xcc5522, 0x9922cc, 0x88cc11, 0xcc1155,
 ];
 
+const BOT_SPAWN_POSITIONS: [number, number][] = [
+  [-26, -8], [26, -8], [-26, 8], [26, 8], [0, -28],
+];
+
 // Fixed patrol points spread around the arena
 const PATROL_POINTS: [number, number][] = [
   [-20, -20], [20, -20], [-20, 20], [20, 20],
@@ -45,6 +49,7 @@ export class BotPlayer {
   private waypointTimer = 0;
   private yaw: number;
   private model: THREE.Group | null = null;
+  private modelBaseY = 0;
   private fireCooldown = 1.5;
 
   get position(): THREE.Vector3 {
@@ -57,12 +62,8 @@ export class BotPlayer {
     this.speed = 2.0 + Math.random() * 2.0;
     this.yaw = Math.random() * Math.PI * 2;
 
-    // Spread bots around map corners/sides
-    const angle = (index / 10) * Math.PI * 2 + Math.random() * 0.6;
-    const r = 6 + (index % 5) * 4 + Math.random() * 2;
-    this.pos = new THREE.Vector3(
-      Math.cos(angle) * r, 0, Math.sin(angle) * r,
-    );
+    const [spawnX, spawnZ] = BOT_SPAWN_POSITIONS[index % BOT_SPAWN_POSITIONS.length];
+    this.pos = new THREE.Vector3(spawnX, 0, spawnZ);
     this.waypoint = this.pickWaypoint();
     this.mesh = new THREE.Group();
     this.buildMesh(index);
@@ -84,6 +85,7 @@ export class BotPlayer {
 
     loadEnemyModel((model) => {
       this.model = model;
+      this.modelBaseY = model.position.y;
       
       // Tint the model's materials to match bot color
       model.traverse((child) => {
@@ -101,28 +103,6 @@ export class BotPlayer {
       this.mesh.add(model);
     });
 
-    // Nametag sprite
-    const canvas = document.createElement('canvas');
-    canvas.width = 256; canvas.height = 64;
-    const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = 'rgba(160, 0, 0, 0.85)';
-    ctx.roundRect(4, 4, 248, 56, 8);
-    ctx.fill();
-    ctx.font = 'bold 26px Arial, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('BOT · ' + this.name, 128, 32);
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: new THREE.CanvasTexture(canvas),
-        transparent: true,
-        depthTest: false,
-      }),
-    );
-    sprite.scale.set(2.8, 0.7, 1);
-    sprite.position.y = 2.75;
-    this.mesh.add(sprite);
   }
 
   update(dt: number, colliders: MapCollider[] = []): void {
@@ -164,7 +144,7 @@ export class BotPlayer {
 
     // Walk bob on the whole model instead of just body
     if (this.model) {
-      this.model.position.y = Math.sin(Date.now() * 0.009) * 0.04;
+      this.model.position.y = this.modelBaseY + Math.sin(Date.now() * 0.009) * 0.04;
     }
 
     this.fireCooldown = Math.max(0, this.fireCooldown - dt);

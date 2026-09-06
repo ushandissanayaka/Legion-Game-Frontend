@@ -5,7 +5,7 @@ import { SOCKET_EVENTS } from '../types/game';
 // Socket.IO client singleton
 // ============================================================
 
-const SERVER_URL = (import.meta.env.VITE_SERVER_URL || 'http://localhost:3001').replace(/\/$/, '');
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
 
 let _socket: Socket | null = null;
 
@@ -17,13 +17,6 @@ export function getSocket(): Socket {
       timeout: 10000,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-    });
-
-    _socket.on('connect', () => {
-      console.info('[Socket] Connected to server', SERVER_URL);
-    });
-    _socket.on('connect_error', (error) => {
-      console.error('[Socket] Connection failed', error.message);
     });
   }
   return _socket;
