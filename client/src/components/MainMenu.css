@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   background: radial-gradient(circle at center, #ffd000, #ff8c00);
   font-family: 'Inter', 'Roboto', sans-serif;
@@ -19,6 +20,7 @@
   align-items: flex-start;
   padding: 10px 20px;
   height: 80px;
+  flex: 0 0 auto;
 }
 
 .top-left {
@@ -106,6 +108,8 @@
   flex: 1;
   padding: 20px;
   gap: 20px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Left Sidebar */
@@ -244,6 +248,7 @@
   align-items: center;
   justify-content: space-between;
   min-width: 0;
+  min-height: 0;
 }
 
 .party-slots {
@@ -285,7 +290,8 @@
 
 .character-display {
   width: 100%;
-  height: 540px;
+  flex: 1 1 auto;
+  min-height: 0;
   margin-top: -30px;
 }
 
@@ -312,7 +318,9 @@
   gap: 14px;
   padding: 0 0 16px 0;
   width: 320px;
+  max-width: 100%;
   align-self: center;
+  flex: 0 0 auto;
 }
 
 .btn-play-huge {
@@ -383,6 +391,7 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 10px;
+  min-height: 0;
 }
 
 .friends-menu {
@@ -395,6 +404,139 @@
   gap: 14px;
   padding: 18px;
   overflow-y: auto;
+}
+
+/* Keep the play controls inside the viewport on shorter laptop displays. */
+@media (max-height: 850px) {
+  .top-bar {
+    height: 68px;
+    padding: 8px 16px;
+  }
+
+  .title-banner {
+    padding: 7px 28px;
+  }
+
+  .title-banner h1 {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+  }
+
+  .lobby-body {
+    padding: 12px 16px;
+  }
+
+  .character-display {
+    margin-top: -16px;
+  }
+
+  .play-actions {
+    gap: 9px;
+    padding-bottom: 8px;
+  }
+
+  .btn-play-huge {
+    padding: 12px;
+  }
+
+  .play-text {
+    font-size: clamp(2.25rem, 5vh, 3.1rem);
+  }
+
+  .btn-practice {
+    padding: 12px;
+    font-size: 1.15rem;
+  }
+}
+
+/* Narrow laptops still retain all controls without horizontal clipping. */
+@media (max-width: 1180px) {
+  .lobby-body {
+    gap: 12px;
+    padding-inline: 12px;
+  }
+
+  .left-sidebar,
+  .right-sidebar {
+    width: 210px;
+    min-width: 210px;
+  }
+
+  .weapon-selector,
+  .player-profile {
+    padding: 10px;
+  }
+
+  .weapon-choice {
+    min-height: 42px;
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .top-left,
+  .right-sidebar {
+    display: none;
+  }
+
+  .top-bar {
+    justify-content: center;
+  }
+
+  .top-center {
+    flex: 0 1 auto;
+  }
+
+  .top-right {
+    position: absolute;
+    right: 12px;
+  }
+
+  .free-skins-btn {
+    display: none;
+  }
+
+  .left-sidebar {
+    width: 190px;
+    min-width: 190px;
+  }
+}
+
+@media (max-height: 650px) {
+  .top-bar {
+    height: 54px;
+  }
+
+  .season-text {
+    display: none;
+  }
+
+  .lobby-body {
+    padding-block: 8px;
+  }
+
+  .weapon-choice:nth-child(4),
+  .player-profile {
+    display: none;
+  }
+
+  .btn-play-huge {
+    padding: 8px;
+    border-width: 3px;
+  }
+
+  .play-text {
+    font-size: 2rem;
+  }
+
+  .play-subtext {
+    font-size: 0.9rem;
+  }
+
+  .btn-practice {
+    padding: 8px;
+    font-size: 1rem;
+  }
 }
 
 .ad-banner {

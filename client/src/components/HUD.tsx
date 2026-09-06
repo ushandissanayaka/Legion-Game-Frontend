@@ -20,6 +20,7 @@ interface HUDProps {
   killFeed: KillFeedItem[];
   weaponType?: WeaponType;
   onClickToPlay: () => void;
+  onLeaveGame: () => void;
 }
 
 const WEAPON_LABELS: Record<WeaponType, string> = {
@@ -58,12 +59,15 @@ export const HUD: React.FC<HUDProps> = ({
   killFeed,
   weaponType = 'assault',
   onClickToPlay,
+  onLeaveGame,
 }) => {
   const [showHitMarker, setShowHitMarker] = useState(false);
   const [showDamageVignette, setShowDamageVignette] = useState(false);
   const [crosshairHit, setCrosshairHit] = useState(false);
+  const [showPauseMenu, setShowPauseMenu] = useState(false);
   const hitTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dmgTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasPointerLocked = useRef(false);
 
   // Expose flash methods globally for game engine to call
   useEffect(() => {
@@ -87,6 +91,31 @@ export const HUD: React.FC<HUDProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowPauseMenu(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Browsers use the first Escape press to release pointer lock.  React to
+  // that release as well, so the pause menu opens on that same key press.
+  useEffect(() => {
+    if (isPointerLocked) {
+      wasPointerLocked.current = true;
+      return;
+    }
+
+    if (wasPointerLocked.current) {
+      wasPointerLocked.current = false;
+      setShowPauseMenu(true);
+    }
+  }, [isPointerLocked]);
+
   const isLowTime = timeRemaining <= 30;
   const isLowAmmo = ammo <= Math.ceil(maxAmmo * 0.25);
   const isLowHealth = health <= 30;
@@ -94,7 +123,7 @@ export const HUD: React.FC<HUDProps> = ({
   return (
     <div className="hud">
       {/* Click to play overlay */}
-      {!isPointerLocked && (
+      {!isPointerLocked && !showPauseMenu && (
         <div className="click-to-play" onClick={onClickToPlay}>
           <div className="pulse-ring" />
           <h2>CLICK TO PLAY</h2>
@@ -109,6 +138,27 @@ export const HUD: React.FC<HUDProps> = ({
             WASD — Move &nbsp;|&nbsp; Shift — Sprint &nbsp;|&nbsp; Mouse — Aim<br />
             LMB — Shoot &nbsp;|&nbsp; R — Reload &nbsp;|&nbsp; 1/2/3 — Switch Weapon<br />
             Tab — Scoreboard
+          </div>
+        </div>
+      )}
+
+      {showPauseMenu && (
+        <div className="pause-menu-overlay" role="dialog" aria-modal="true" aria-label="Game menu">
+          <div className="pause-menu">
+            <h2>GAME PAUSED</h2>
+            <p>Select Resume to continue playing.</p>
+            <button
+              className="pause-resume-button"
+              onClick={() => {
+                setShowPauseMenu(false);
+                onClickToPlay();
+              }}
+            >
+              RESUME GAME
+            </button>
+            <button className="pause-leave-button" onClick={onLeaveGame}>
+              LEAVE TO LOBBY
+            </button>
           </div>
         </div>
       )}

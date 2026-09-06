@@ -489,6 +489,7 @@ export default function App() {
               killFeed={killFeed}
               weaponType={currentWeapon}
               onClickToPlay={handleClickToPlay}
+              onLeaveGame={handleLeaveRoom}
             />
             {showScoreboard && room && localPlayer && (
               <Scoreboard
