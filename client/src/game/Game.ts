@@ -50,6 +50,7 @@ export class Game {
   private localPlayerId: string;
   private isRunning = false;
   private localRespawnTimer = 0;
+  private reloadKeyWasDown = false;
 
   constructor(
     container: HTMLElement,
@@ -64,6 +65,8 @@ export class Game {
     initialWeapon: WeaponType = 'assault'
   ) {
     this.container = container;
+    this.container.tabIndex = -1;
+    this.container.focus({ preventScroll: true });
     this.socket = socket;
     this.audio = audio;
     this.localPlayerId = localPlayerId;
@@ -82,7 +85,7 @@ export class Game {
     this.localPlayer = new LocalPlayer(spawnPos);
 
     // Weapon — use the weapon selected from the main menu
-    this.weapon = new Weapon(this.scene.scene, this.camera, this.lighting, audio, initialWeapon);
+    this.weapon = new Weapon(this.scene.scene, this.camera, this.lighting, audio, this.map.colliders, initialWeapon);
 
     // Add remote players already in room
     let colorIdx = 0;
@@ -100,6 +103,7 @@ export class Game {
     }
 
     // Set initial camera position
+    this.camera.yaw = Math.atan2(spawnPos.x, spawnPos.z);
     this.camera.updateFromPosition(this.localPlayer.position);
 
     // Pointer lock setup
@@ -170,9 +174,11 @@ export class Game {
     }
 
     // ── Reload (R key) ──────────────────────────────────────
-    if (this.controls.keys['KeyR'] && !this.weapon.isCurrentlyReloading) {
+    const reloadKeyDown = Boolean(this.controls.keys['KeyR'] || this.controls.keys['r']);
+    if (reloadKeyDown && !this.reloadKeyWasDown && !this.weapon.isCurrentlyReloading) {
       this.weapon.reload();
     }
+    this.reloadKeyWasDown = reloadKeyDown;
 
     // ── Shooting ────────────────────────────────────────────
     // Auto-fire for assault rifle (hold), single for shotgun/sniper (press)
@@ -198,8 +204,8 @@ export class Game {
             this.callbacks.onKillsChange(this.localPlayer.kills, this.localPlayer.deaths);
             this.callbacks.onKillFeed(this.localPlayerId, 'You', bot.name);
           }
-        } else {
-          // Send every multiplayer shot; the server resolves the target.
+        } else if (result.targetId) {
+          // Remote player hit — send to server with weapon type & damage
           this.socket.emit(SOCKET_EVENTS.PLAYER_SHOOT, {
             roomId: this.roomId,
             targetId: result.targetId,
@@ -214,7 +220,11 @@ export class Game {
     }
 
     // Update weapon view model
-    this.weapon.update(dt, this.camera.camera.position);
+    const ammoBeforeWeaponUpdate = this.weapon.ammo;
+    this.weapon.update(dt, this.camera.camera.position, this.controls.aiming);
+    if (this.weapon.ammo !== ammoBeforeWeaponUpdate) {
+      this.callbacks.onAmmoChange(this.weapon.ammo, this.weapon.maxAmmo);
+    }
 
     // Update remote players
     for (const rp of this.remotePlayers.values()) {
