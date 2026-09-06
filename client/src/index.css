@@ -272,6 +272,16 @@ body {
   transform: translateY(-1px);
 }
 
+.btn-practice-secondary {
+  background: linear-gradient(135deg, #8a4b00, #ff9800);
+  color: white;
+  box-shadow: 0 4px 20px rgba(255, 152, 0, 0.22);
+}
+.btn-practice-secondary:hover:not(:disabled) {
+  box-shadow: 0 6px 28px rgba(255, 152, 0, 0.4);
+  transform: translateY(-1px);
+}
+
 .btn-secondary {
   background: transparent;
   color: var(--accent-primary);

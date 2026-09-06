@@ -8,6 +8,7 @@ interface ResultsProps {
   localPlayerId: string;
   audio: AudioManager;
   onPlayAgain: () => void;
+  onStartPractice: () => void;
   onReturnLobby: () => void;
 }
 
@@ -17,6 +18,7 @@ export const Results: React.FC<ResultsProps> = ({
   localPlayerId,
   audio,
   onPlayAgain,
+  onStartPractice,
   onReturnLobby,
 }) => {
   const sorted = [...room.players].sort((a, b) => {
@@ -81,6 +83,13 @@ export const Results: React.FC<ResultsProps> = ({
           onClick={() => { audio.playClick(); onPlayAgain(); }}
         >
           ⚡ Play Again
+        </button>
+        <button
+          id="start-practice-btn"
+          className="btn btn-practice-secondary"
+          onClick={() => { audio.playClick(); onStartPractice(); }}
+        >
+          🔫 Practice Mode
         </button>
         <button
           id="return-lobby-btn"

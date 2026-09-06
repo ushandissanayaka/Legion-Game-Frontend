@@ -342,7 +342,16 @@ export default function App() {
     practiceAutoStartRef.current = true;
     const socket = connectSocket();
     socketRef.current = socket;
+    if (room) {
+      socket.emit(SOCKET_EVENTS.LEAVE_ROOM, { roomId: room.id });
+      setRoom(null);
+      setLocalPlayer(null);
+    }
     socket.emit(SOCKET_EVENTS.CREATE_ROOM, { playerName: name, matchDuration: duration });
+  };
+
+  const handlePracticeFromCurrentScreen = () => {
+    handleStartPractice(localPlayer?.name || 'Player', 5, room?.matchDuration || 180, weaponType);
   };
 
   const handleJoinRoom = (name: string, roomId: string) => {
@@ -449,6 +458,7 @@ export default function App() {
             localPlayer={localPlayer}
             audio={audioRef.current}
             onStartMatch={handleStartMatch}
+            onStartPractice={handlePracticeFromCurrentScreen}
             onLeaveRoom={handleLeaveRoom}
           />
         ) : null}
@@ -498,6 +508,7 @@ export default function App() {
             localPlayerId={localPlayer.id}
             audio={audioRef.current}
             onPlayAgain={handlePlayAgain}
+            onStartPractice={handlePracticeFromCurrentScreen}
             onReturnLobby={handleReturnLobby}
           />
         ) : null}
