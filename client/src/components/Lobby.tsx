@@ -7,6 +7,7 @@ interface LobbyProps {
   localPlayer: PlayerState;
   audio: AudioManager;
   onStartMatch: () => void;
+  onStartPractice: () => void;
   onLeaveRoom: () => void;
 }
 
@@ -15,6 +16,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   localPlayer,
   audio,
   onStartMatch,
+  onStartPractice,
   onLeaveRoom,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -93,22 +95,39 @@ export const Lobby: React.FC<LobbyProps> = ({
         {/* Actions */}
         <div className="lobby-actions">
           {isHost ? (
-            <button
-              id="start-match-btn"
-              className="btn btn-primary"
-              onClick={() => { audio.playClick(); onStartMatch(); }}
-              disabled={room.players.length < 1}
-            >
-              {room.players.length < 2
-                ? '⚡ Start Solo Practice'
-                : `⚡ Start Match (${room.players.length} Players)`}
-            </button>
+            <>
+              <button
+                id="start-match-btn"
+                className="btn btn-primary"
+                onClick={() => { audio.playClick(); onStartMatch(); }}
+                disabled={room.players.length < 1}
+              >
+                {`⚡ Start Match (${room.players.length} Players)`}
+              </button>
+              <button
+                id="start-practice-btn"
+                className="btn btn-practice-secondary"
+                onClick={() => { audio.playClick(); onStartPractice(); }}
+              >
+                🔫 Practice Mode
+              </button>
+            </>
           ) : (
             <div className="menu-card" style={{ textAlign: 'center' }}>
               <p style={{ fontFamily: 'var(--font-ui)', color: 'var(--text-secondary)', fontSize: 14 }}>
                 Waiting for the host to start the match…
               </p>
             </div>
+          )}
+
+          {!isHost && (
+            <button
+              id="start-practice-btn"
+              className="btn btn-practice-secondary"
+              onClick={() => { audio.playClick(); onStartPractice(); }}
+            >
+              🔫 Practice Mode
+            </button>
           )}
 
           <button
