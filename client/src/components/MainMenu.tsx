@@ -9,9 +9,13 @@ import './MainMenu.css';
 
 function CharacterModel() {
   const { scene, animations } = useGLTF('/low poly soldier 3d model.glb');
-  const { actions } = useAnimations(animations, scene);
+  const model = React.useMemo(() => scene.clone(true), [scene]);
+  const { actions } = useAnimations(animations, model);
   const groupRef = useRef<THREE.Group>(null);
-  const bounds = React.useMemo(() => new THREE.Box3().setFromObject(scene), [scene]);
+  const bounds = React.useMemo(() => {
+    model.updateMatrixWorld(true);
+    return new THREE.Box3().setFromObject(model);
+  }, [model]);
   const modelHeight = Math.max(bounds.max.y - bounds.min.y, 0.001);
   const displayScale = ENEMY_MODEL_HEIGHT / modelHeight;
   const displayY = -((bounds.min.y + bounds.max.y) / 2) * displayScale;
@@ -35,8 +39,8 @@ function CharacterModel() {
   });
 
   return (
-    <group ref={groupRef}>
-      <primitive object={scene} scale={displayScale} position={[0, displayY, 0]} />
+    <group ref={groupRef} scale={displayScale} position={[0, displayY, 0]}>
+      <primitive object={model} />
     </group>
   );
 }
@@ -178,8 +182,10 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               className={`btn-play-huge ${isConnecting ? 'loading' : ''}`}
               onClick={handleAutoJoin}
               disabled={isConnecting}
+              aria-busy={isConnecting}
             >
-              <div className="play-text">{isConnecting ? 'JOINING...' : 'PLAY'}</div>
+              {isConnecting && <span className="play-loading" aria-label="Joining room" />}
+              <div className="play-text">{isConnecting ? 'JOINING ROOM...' : 'PLAY'}</div>
               <div className="play-subtext">{isConnecting ? 'Please wait' : 'Multiplayer'}</div>
             </button>
             <button 
