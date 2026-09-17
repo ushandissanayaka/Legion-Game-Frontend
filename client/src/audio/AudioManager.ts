@@ -6,6 +6,24 @@
 export class AudioManager {
   private ctx: AudioContext | null = null;
   private enabled = true;
+  private reloadBuffer: AudioBuffer | null = null;
+
+  constructor() {
+    this.preloadSounds();
+  }
+
+  private async preloadSounds() {
+    try {
+      const res = await fetch('/sounds/reload.ogg');
+      if (res.ok) {
+        const arrayBuffer = await res.arrayBuffer();
+        const ctx = this.getCtx();
+        this.reloadBuffer = await ctx.decodeAudioData(arrayBuffer);
+      }
+    } catch (e) {
+      console.warn('Failed to load reload sound', e);
+    }
+  }
 
   private getCtx(): AudioContext {
     if (!this.ctx) {
@@ -117,13 +135,30 @@ export class AudioManager {
 
   playReload(): void {
     if (!this.enabled) return;
-    this.noise(0.12, 260, 'triangle', 0.25, 0.12);
+    if (this.reloadBuffer) {
+      try {
+        const ctx = this.getCtx();
+        const source = ctx.createBufferSource();
+        source.buffer = this.reloadBuffer;
+        
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 0.8; // Set volume
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        source.start();
+      } catch (e) {}
+    } else {
+      this.noise(0.12, 260, 'triangle', 0.25, 0.12);
+    }
   }
 
   playReloadComplete(): void {
     if (!this.enabled) return;
-    this.noise(0.08, 520, 'square', 0.2, 0.08);
-    this.noise(0.14, 780, 'triangle', 0.18, 0.14);
+    if (!this.reloadBuffer) {
+      this.noise(0.08, 520, 'square', 0.2, 0.08);
+      this.noise(0.14, 780, 'triangle', 0.18, 0.14);
+    }
   }
 
   playCountdown(): void {
