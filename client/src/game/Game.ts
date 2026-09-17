@@ -9,6 +9,7 @@ import { RemotePlayer } from '../player/RemotePlayer';
 import { BotPlayer, type BotTarget } from '../player/BotPlayer';
 import { Weapon } from '../weapons/Weapon';
 import type { WeaponType } from '../weapons/Weapon';
+import { BulletTracer } from '../weapons/BulletTracer';
 import { AudioManager } from '../audio/AudioManager';
 import { Socket } from 'socket.io-client';
 import { SOCKET_EVENTS } from '../types/game';
@@ -39,6 +40,7 @@ export class Game {
   private controls: PlayerControls;
   private localPlayer: LocalPlayer;
   private weapon: Weapon;
+  private bulletTracer: BulletTracer;
   private audio: AudioManager;
   private socket: Socket;
   private callbacks: GameCallbacks;
@@ -86,6 +88,7 @@ export class Game {
 
     // Weapon — use the weapon selected from the main menu
     this.weapon = new Weapon(this.scene.scene, this.camera, this.lighting, audio, this.map.colliders, initialWeapon);
+    this.bulletTracer = new BulletTracer(this.scene.scene);
 
     // Add remote players already in room
     let colorIdx = 0;
@@ -191,6 +194,9 @@ export class Game {
     if (wantFire) {
       const result = this.weapon.tryFire(this.remotePlayers, this.bots);
       if (result) {
+        // Add tracer for local player
+        this.bulletTracer.addTracer(result.origin, result.direction);
+
         this.callbacks.onAmmoChange(this.weapon.ammo, this.weapon.maxAmmo);
 
         if (result.hitBotIndex >= 0 && result.hitBotIndex < this.bots.length) {
@@ -235,6 +241,9 @@ export class Game {
     for (const bot of this.bots) {
       bot.update(dt, this.map.colliders);
     }
+    
+    // Update bullet tracers
+    this.bulletTracer.update(dt);
 
     // Practice bots fire at the nearest living player or bot.
     if (this.bots.length > 0) {
@@ -248,6 +257,12 @@ export class Game {
         const target = bot.tryShoot(targets);
         if (target) {
           this.audio.playShoot();
+          
+          // Add tracer for bots
+          const origin = bot.position.clone().add(new THREE.Vector3(0, 1.5, 0));
+          const direction = target.position.clone().sub(bot.position).normalize();
+          this.bulletTracer.addTracer(origin, direction);
+          
           const targetKilled = target.takeDamage(10);
 
           if (target === localTarget) {
@@ -303,6 +318,7 @@ export class Game {
     this.socket.on(SOCKET_EVENTS.PLAYER_DEATH, this.handlePlayerDeath);
     this.socket.on(SOCKET_EVENTS.PLAYER_RESPAWN, this.handlePlayerRespawn);
     this.socket.on(SOCKET_EVENTS.GAME_STATE_UPDATE, this.handleGameStateUpdate);
+    this.socket.on(SOCKET_EVENTS.PLAYER_SHOOT, this.handlePlayerShoot);
   }
 
   private handlePlayerJoined = ({ player, room }: { player: PlayerState; room: RoomState }) => {
@@ -334,6 +350,15 @@ export class Game {
     }) => {
       const rp = this.remotePlayers.get(playerId);
       if (rp) rp.setTargetState(position, rotation);
+  };
+
+  private handlePlayerShoot = (payload: { shooterId: string; origin: { x: number; y: number; z: number }; direction: { x: number; y: number; z: number }; weaponType: string }) => {
+    if (payload.shooterId !== this.localPlayerId) {
+      this.audio.playShoot();
+      const origin = new THREE.Vector3(payload.origin.x, payload.origin.y, payload.origin.z);
+      const direction = new THREE.Vector3(payload.direction.x, payload.direction.y, payload.direction.z);
+      this.bulletTracer.addTracer(origin, direction);
+    }
   };
 
     // Hit confirmation from server
@@ -422,6 +447,7 @@ export class Game {
     this.socket.off(SOCKET_EVENTS.PLAYER_DEATH, this.handlePlayerDeath);
     this.socket.off(SOCKET_EVENTS.PLAYER_RESPAWN, this.handlePlayerRespawn);
     this.socket.off(SOCKET_EVENTS.GAME_STATE_UPDATE, this.handleGameStateUpdate);
+    this.socket.off(SOCKET_EVENTS.PLAYER_SHOOT, this.handlePlayerShoot);
 
     this.container.removeEventListener('click', this.handleContainerClick);
     document.removeEventListener('pointerlockchange', this.onPointerLockChange);
@@ -429,6 +455,7 @@ export class Game {
     this.controls.exitPointerLock();
     this.controls.dispose();
     this.weapon.dispose();
+    this.bulletTracer.dispose();
     this.map.dispose();
 
     for (const rp of this.remotePlayers.values()) {
